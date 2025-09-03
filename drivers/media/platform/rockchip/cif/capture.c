@@ -10312,6 +10312,12 @@ u32 rkcif_mbus_pixelcode_to_v4l2(u32 pixelcode)
 	case MEDIA_BUS_FMT_EBD_1X8:
 		pixelformat = V4l2_PIX_FMT_EBD8;
 		break;
+	case MEDIA_BUS_FMT_UYVY8_2X8:
+		pixelformat = V4L2_PIX_FMT_UYVY;
+		break;
+	case MEDIA_BUS_FMT_YUYV8_2X8:
+		pixelformat = V4L2_PIX_FMT_YUYV;
+		break;
 	default:
 		pixelformat = V4L2_PIX_FMT_SRGGB10;
 	}
