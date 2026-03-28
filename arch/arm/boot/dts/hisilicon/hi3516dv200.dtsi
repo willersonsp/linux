@@ -16,9 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "skeleton.dtsi"
+
 #include <dt-bindings/clock/hi3516dv200-clock.h>
 / {
+	#address-cells = <1>;
+	#size-cells = <1>;
 	aliases {
 		serial0 = &uart0;
 		serial1 = &uart1;
