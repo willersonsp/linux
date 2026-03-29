@@ -80,7 +80,7 @@
 		#address-cells = <0>;
 		interrupt-controller;
 		/* gic dist base, gic cpu base , no virtual support */
-		reg = <0x10301000 0x1000>, <0x10302000 0x100>;
+		reg = <0x10301000 0x1000>, <0x10302000 0x2000>;
 	 };
 
 	syscounter {
