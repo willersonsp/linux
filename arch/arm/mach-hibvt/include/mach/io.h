@@ -5,6 +5,10 @@
 #include <mach/hi3516a_io.h>
 #endif
 
+#if defined(CONFIG_ARCH_HI3516EV200) || defined(CONFIG_ARCH_HI3516EV300) || defined(CONFIG_ARCH_HI3518EV300) || defined(CONFIG_ARCH_HI3516DV200)
+#include <mach/hi3518ev20x_io.h>
+#endif
+
 #ifdef CONFIG_ARCH_HI3518EV20X
 #include <mach/hi3518ev20x_io.h>
 #endif
