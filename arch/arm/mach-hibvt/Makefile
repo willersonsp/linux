@@ -21,3 +21,4 @@ obj-$(CONFIG_ARCH_HI3519AV100) += mach-hi3519av100.o
 obj-$(CONFIG_CACHE_L2X0)   += l2cache.o
 
 obj-$(CONFIG_SMP)	+= platsmp.o
+ccflags-y += -I$(srctree)/arch/arm/mach-hibvt/include
