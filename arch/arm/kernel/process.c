@@ -40,7 +40,7 @@
 DEFINE_PER_CPU(struct task_struct *, __entry_task);
 #endif
 
-#if defined(CONFIG_STACKPROTECTOR) && !defined(CONFIG_STACKPROTECTOR_PER_TASK)
+#if defined(CONFIG_STACKPROTECTOR)
 #include <linux/stackprotector.h>
 unsigned long __stack_chk_guard __read_mostly;
 EXPORT_SYMBOL(__stack_chk_guard);
