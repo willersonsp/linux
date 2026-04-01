@@ -132,6 +132,7 @@ int __init hibvt_reset_init(struct device_node *np, int nr_rsts)
 	rstc->rcdev.ops = &hisi_reset_ops;
 	rstc->rcdev.of_node = np;
 	rstc->rcdev.of_reset_n_cells = 2;
+	rstc->rcdev.of_xlate = hisi_reset_of_xlate;
 	rstc->rcdev.nr_resets = nr_rsts;
 
 	rstc->membase = of_iomap(np, 0);
