@@ -138,10 +138,38 @@ static void hisi_spi_nor_init(struct hifmc_host *host)
 {
 	u32 reg;
 
+	dev_dbg(host->dev, "FMC regs before init: CFG=0x%08x GLOBAL_CFG=0x%08x TIMING=0x%08x\n",
+		 readl(host->regbase + FMC_CFG),
+		 readl(host->regbase + FMC_GLOBAL_CFG),
+		 readl(host->regbase + FMC_SPI_TIMING_CFG));
+
+	/* Select SPI NOR flash type (FMC_CFG bits 2:1 = 0) */
+	reg = readl(host->regbase + FMC_CFG);
+	reg &= ~FMC_CFG_FLASH_SEL_MASK;
+	writel(reg, host->regbase + FMC_CFG);
+
+	/* Ensure normal operation mode (not boot mode) */
+	reg = readl(host->regbase + FMC_CFG);
+	if (!(reg & FMC_CFG_OP_MODE_NORMAL)) {
+		reg |= FMC_CFG_OP_MODE_NORMAL;
+		writel(reg, host->regbase + FMC_CFG);
+	}
+
+	/* Disable DTR (Double Transfer Rate) mode — use standard STR */
+	reg = readl(host->regbase + FMC_GLOBAL_CFG);
+	reg &= ~BIT(11);
+	writel(reg, host->regbase + FMC_GLOBAL_CFG);
+
+	/* Set SPI timing: chip select hold, setup, deselect times */
 	reg = TIMING_CFG_TCSH(CS_HOLD_TIME)
 		| TIMING_CFG_TCSS(CS_SETUP_TIME)
 		| TIMING_CFG_TSHSL(CS_DESELECT_TIME);
 	writel(reg, host->regbase + FMC_SPI_TIMING_CFG);
+
+	dev_dbg(host->dev, "FMC regs after init: CFG=0x%08x GLOBAL_CFG=0x%08x TIMING=0x%08x\n",
+		 readl(host->regbase + FMC_CFG),
+		 readl(host->regbase + FMC_GLOBAL_CFG),
+		 readl(host->regbase + FMC_SPI_TIMING_CFG));
 }
 
 static int hisi_spi_nor_prep(struct spi_nor *nor)
@@ -330,8 +358,12 @@ static int hisi_spi_nor_register(struct device_node *np,
 		.mask = SNOR_HWCAPS_READ |
 			SNOR_HWCAPS_READ_FAST |
 			SNOR_HWCAPS_READ_1_1_2 |
-			SNOR_HWCAPS_READ_1_1_4 |
 			SNOR_HWCAPS_PP,
+		/* Note: SNOR_HWCAPS_READ_1_1_4 (quad) removed — the FMC
+		 * controller doesn't set the flash QE (Quad Enable) bit,
+		 * so quad reads return garbage on chips where QE is not
+		 * pre-configured by the bootloader. Dual read (0xBB) is
+		 * safe and matches the vendor 4.9 driver behavior. */
 	};
 	struct device *dev = host->dev;
 	struct spi_nor *nor;

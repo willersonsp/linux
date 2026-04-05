@@ -899,7 +899,6 @@ config I2C_OMAP
 	tristate "OMAP I2C adapter"
 	depends on ARCH_OMAP || ARCH_K3 || COMPILE_TEST
 	default MACH_OMAP_OSK
-	select MULTIPLEXER
 	help
 	  If you say yes to this option, support will be included for the
 	  I2C interface on the Texas Instruments OMAP1/2 family of processors.
@@ -1483,3 +1482,10 @@ config I2C_VIRTIO
           will be called i2c-virtio.
 
 endmenu
+
+config I2C_HIBVT
+	tristate "HiSilicon BVT I2C controller"
+	depends on ARCH_HISI_BVT || COMPILE_TEST
+	help
+	  Say Y here to include support for the I2C controller found on
+	  HiSilicon BVT SoCs (hi3516ev200, hi3516ev300, etc.).
