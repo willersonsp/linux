@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/arm/hisilicon/hisilicon-bvt.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: HiSilicon BVT IP Camera SoC Platforms
+
+maintainers:
+  - Dmitry Ilyin <6576495+widgetii@users.noreply.github.com>
+
+description: |
+  HiSilicon BVT (Broadcast Video Technology) SoC family — ARM Cortex-A7
+  processors used in IP cameras and video surveillance equipment.
+
+properties:
+  $nodename:
+    const: /
+  compatible:
+    oneOf:
+      - items:
+          - const: hisilicon,hi3516ev200
+      - items:
+          - const: hisilicon,hi3516ev300
+      - items:
+          - const: hisilicon,hi3518ev200
+      - items:
+          - const: hisilicon,hi3518ev300
+      - items:
+          - const: hisilicon,hi3516dv200
+      - items:
+          - const: hisilicon,hi3516dv300
+
+additionalProperties: true
