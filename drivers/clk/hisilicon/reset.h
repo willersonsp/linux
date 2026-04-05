@@ -23,3 +23,7 @@ static inline void hisi_reset_exit(struct hisi_reset_controller *rstc)
 #endif
 
 #endif	/* __HISI_RESET_H */
+
+#ifdef CONFIG_ARCH_HISI_BVT
+int hibvt_reset_init(struct device_node *np, int nr_rsts);
+#endif

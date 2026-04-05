@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 config COMMON_CLK_HI3516CV300
 	tristate "HI3516CV300 Clock Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	select RESET_HISI
 	default ARCH_HISI
 	help
@@ -9,7 +9,7 @@ config COMMON_CLK_HI3516CV300
 
 config COMMON_CLK_HI3519
 	tristate "Hi3519 Clock Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	select RESET_HISI
 	default ARCH_HISI
 	help
@@ -17,7 +17,7 @@ config COMMON_CLK_HI3519
 
 config COMMON_CLK_HI3559A
 	bool "Hi3559A Clock Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	select RESET_HISI
 	default ARCH_HISI
 	help
@@ -25,21 +25,21 @@ config COMMON_CLK_HI3559A
 
 config COMMON_CLK_HI3660
 	bool "Hi3660 Clock Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	default ARCH_HISI
 	help
 	  Build the clock driver for hi3660.
 
 config COMMON_CLK_HI3670
 	bool "Hi3670 Clock Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	default ARCH_HISI
 	help
 	  Build the clock driver for hi3670.
 
 config COMMON_CLK_HI3798CV200
 	tristate "Hi3798CV200 Clock Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	select RESET_HISI
 	default ARCH_HISI
 	help
@@ -47,14 +47,14 @@ config COMMON_CLK_HI3798CV200
 
 config COMMON_CLK_HI6220
 	bool "Hi6220 Clock Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	default ARCH_HISI
 	help
 	  Build the Hisilicon Hi6220 clock driver based on the common clock framework.
 
 config RESET_HISI
 	bool "HiSilicon Reset Controller Driver"
-	depends on ARCH_HISI || COMPILE_TEST
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
 	select RESET_CONTROLLER
 	help
 	  Build reset controller driver for HiSilicon device chipsets.
@@ -74,3 +74,23 @@ config STUB_CLK_HI3660
 	default COMMON_CLK_HI3660
 	help
 	  Build the Hisilicon Hi3660 stub clock driver.
+
+config COMMON_CLK_HI3516EV200
+	bool "Hi3516EV200 Clock Driver"
+	depends on ARCH_HISI_BVT || COMPILE_TEST
+	default ARCH_HI3516EV200
+
+config COMMON_CLK_HI3516EV300
+	bool "Hi3516EV300 Clock Driver"
+	depends on ARCH_HISI_BVT || COMPILE_TEST
+	default ARCH_HI3516EV300
+
+config COMMON_CLK_HI3518EV300
+	bool "Hi3518EV300 Clock Driver"
+	depends on ARCH_HISI_BVT || COMPILE_TEST
+	default ARCH_HI3518EV300
+
+config COMMON_CLK_HI3516DV200
+	bool "Hi3516DV200 Clock Driver"
+	depends on ARCH_HISI_BVT || COMPILE_TEST
+	default ARCH_HI3516DV200
