@@ -11,3 +11,8 @@ dtb-$(CONFIG_ARCH_HIX5HD2) += \
 	hisi-x5hd2-dkb.dtb
 dtb-$(CONFIG_ARCH_SD5203) += \
 	sd5203.dtb
+dtb-$(CONFIG_ARCH_HISI_BVT) += \
+	hi3516ev200-demb.dtb \
+	hi3516ev300-demb.dtb \
+	hi3518ev300-demb.dtb \
+	hi3518ev20x-demb.dtb

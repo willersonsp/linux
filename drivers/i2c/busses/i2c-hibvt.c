@@ -1059,7 +1059,7 @@ static int hibvt_i2c_probe(struct platform_device *pdev)
     adap = &i2c->adap;
     i2c_set_adapdata(adap, i2c);
     adap->owner = THIS_MODULE;
-    strlcpy(adap->name, "hibvt-i2c", sizeof(adap->name));
+    strscpy(adap->name, "hibvt-i2c", sizeof(adap->name));
     adap->dev.parent = &pdev->dev;
     adap->dev.of_node = pdev->dev.of_node;
     adap->algo = &hibvt_i2c_algo;
@@ -1081,14 +1081,14 @@ err_add_adapter:
     return status;
 }
 
-static int hibvt_i2c_remove(struct platform_device *pdev)
+static void hibvt_i2c_remove(struct platform_device *pdev)
 {
     struct hibvt_i2c_dev *i2c = platform_get_drvdata(pdev);
 
     clk_disable_unprepare(i2c->clk);
     i2c_del_adapter(&i2c->adap);
 
-    return 0;
+    return;
 }
 
 #ifdef CONFIG_PM_SLEEP
