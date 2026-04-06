@@ -1049,10 +1049,14 @@ static int hibvt_i2c_probe(struct platform_device *pdev)
     hibvt_i2c_hw_init(i2c);
 
     i2c->irq = platform_get_irq_optional(pdev, 0);
-    status = devm_request_irq(&pdev->dev, i2c->irq, hibvt_i2c_isr,
-                              IRQF_SHARED, dev_name(&pdev->dev), i2c);
-    if (status) {
-        dev_dbg(i2c->dev, "falling back to polling mode");
+    if (i2c->irq >= 0) {
+        status = devm_request_irq(&pdev->dev, i2c->irq, hibvt_i2c_isr,
+                                  IRQF_SHARED, dev_name(&pdev->dev), i2c);
+        if (status) {
+            dev_dbg(i2c->dev, "falling back to polling mode");
+            i2c->irq = -1;
+        }
+    } else {
         i2c->irq = -1;
     }
 
