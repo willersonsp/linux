@@ -3049,11 +3049,12 @@ static void spi_controller_release(struct device *dev)
 	kfree(ctlr);
 }
 
-static const struct class spi_controller_class = {
+const struct class spi_controller_class = {
 	.name		= "spi_master",
 	.dev_release	= spi_controller_release,
 	.dev_groups	= spi_controller_groups,
 };
+EXPORT_SYMBOL(spi_controller_class);
 
 #ifdef CONFIG_SPI_SLAVE
 /**

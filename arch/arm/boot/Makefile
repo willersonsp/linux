@@ -12,6 +12,13 @@
 #
 OBJCOPYFLAGS	:=-O binary -R .comment -S
 
+ifneq ($(wildcard $(srctree)/arch/arm/mach-hibvt/Makefile.boot),)
+include $(srctree)/arch/arm/mach-hibvt/Makefile.boot
+include $(srctree)/arch/arm/boot/dts/hisilicon/Makefile
+DTB_OBJS ?= $(dtb-y)
+DTB_OBJS_FULL := $(addprefix $(obj)/dts/hisilicon/,$(DTB_OBJS))
+endif
+
 #   ZRELADDR == virt_to_phys(PAGE_OFFSET + TEXT_OFFSET)
 ifdef CONFIG_PHYS_OFFSET
 add_hex = $(shell printf 0x%x $$(( $(1) + $(2) )) )
@@ -21,7 +28,7 @@ endif
 PHYS_OFFSET := $(CONFIG_PHYS_OFFSET)
 export ZRELADDR PARAMS_PHYS PHYS_OFFSET
 
-targets := Image zImage xipImage bootpImage uImage
+targets := Image zImage xipImage bootpImage uImage zImage-dtb
 
 ifeq ($(CONFIG_XIP_KERNEL),y)
 
@@ -59,6 +66,12 @@ $(obj)/compressed/vmlinux: $(obj)/Image FORCE
 $(obj)/zImage:	$(obj)/compressed/vmlinux FORCE
 	$(call if_changed,objcopy)
 
+quiet_cmd_cat_dtb = CAT     $@
+      cmd_cat_dtb = cat $(obj)/zImage $(DTB_OBJS_FULL) > $@
+
+$(obj)/zImage-dtb: $(obj)/zImage $(DTB_OBJS_FULL) FORCE
+	$(call if_changed,cat_dtb)
+
 endif
 
 ifneq ($(LOADADDR),)
@@ -79,7 +92,7 @@ if [ $(words $(UIMAGE_LOADADDR)) -ne 1 ]; then \
 	false; \
 fi
 
-$(obj)/uImage:	$(obj)/zImage FORCE
+$(obj)/uImage:	$(obj)/zImage-dtb FORCE
 	@$(check_for_multiple_loadaddr)
 	$(call if_changed,uimage)
 
