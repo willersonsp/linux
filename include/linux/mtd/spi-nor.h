@@ -96,6 +96,7 @@
 #define SPINOR_OP_ESECR		0x44	/* Erase Security registers */
 #define SPINOR_OP_PSECR		0x42	/* Program Security registers */
 #define SPINOR_OP_RSECR		0x48	/* Read Security registers */
+#define SPINOR_OP_RDUID		0x4b	/* Read Unique ID */
 
 /* Status Register bits. */
 #define SR_WIP			BIT(0)	/* Write in progress */

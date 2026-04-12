@@ -331,6 +331,18 @@ struct spi_nor_otp {
 	const struct spi_nor_otp_ops *ops;
 };
 
+#define SPI_NOR_UNIQUE_ID_LEN	8
+
+/**
+ * struct spi_nor_fact_otp - SPI NOR factory OTP (unique ID)
+ * @len:	length of factory OTP data in bytes
+ * @read:	read the factory OTP data into @buf
+ */
+struct spi_nor_fact_otp {
+	size_t len;
+	int (*read)(struct spi_nor *nor, u8 *buf);
+};
+
 /**
  * struct spi_nor_flash_parameter - SPI NOR flash parameters and settings.
  * Includes legacy flash parameters and settings that can be overwritten
@@ -364,6 +376,7 @@ struct spi_nor_otp {
  * @erase_map:		the erase map parsed from the SFDP Sector Map Parameter
  *                      Table.
  * @otp:		SPI NOR OTP info.
+ * @fact_otp:		factory OTP (unique ID) info.
  * @set_octal_dtr:	enables or disables SPI NOR octal DTR mode.
  * @quad_enable:	enables SPI NOR quad mode.
  * @set_4byte_addr_mode: puts the SPI NOR in 4 byte addressing mode.
@@ -393,6 +406,7 @@ struct spi_nor_flash_parameter {
 
 	struct spi_nor_erase_map        erase_map;
 	struct spi_nor_otp		otp;
+	struct spi_nor_fact_otp		fact_otp;
 
 	int (*set_octal_dtr)(struct spi_nor *nor, bool enable);
 	int (*quad_enable)(struct spi_nor *nor);
@@ -644,6 +658,7 @@ int spi_nor_write_any_volatile_reg(struct spi_nor *nor, struct spi_mem_op *op,
 int spi_nor_erase_sector(struct spi_nor *nor, u32 addr);
 
 int spi_nor_otp_read_secr(struct spi_nor *nor, loff_t addr, size_t len, u8 *buf);
+int spi_nor_otp_read_uid(struct spi_nor *nor, u8 *buf);
 int spi_nor_otp_write_secr(struct spi_nor *nor, loff_t addr, size_t len,
 			   const u8 *buf);
 int spi_nor_otp_erase_secr(struct spi_nor *nor, loff_t addr);

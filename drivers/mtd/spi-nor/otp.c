@@ -153,6 +153,52 @@ int spi_nor_otp_erase_secr(struct spi_nor *nor, loff_t addr)
 	return spi_nor_wait_till_ready(nor);
 }
 
+/**
+ * spi_nor_otp_read_uid() - read unique ID
+ * @nor:	pointer to 'struct spi_nor'
+ * @buf:	pointer to dst buffer of SPI_NOR_UNIQUE_ID_LEN bytes
+ *
+ * Read the factory-programmed unique ID by using the SPINOR_OP_RDUID command.
+ * The command format is: opcode (0x4B), 4 dummy bytes, then 8 data bytes.
+ *
+ * This is used on Winbond, GigaDevice, and many other flashes.
+ *
+ * Return: 0 on success, -errno otherwise.
+ */
+int spi_nor_otp_read_uid(struct spi_nor *nor, u8 *buf)
+{
+	u8 read_opcode, read_dummy;
+	struct spi_mem_dirmap_desc *rdesc;
+	enum spi_nor_protocol read_proto;
+	int ret;
+
+	read_opcode = nor->read_opcode;
+	read_dummy = nor->read_dummy;
+	read_proto = nor->read_proto;
+	rdesc = nor->dirmap.rdesc;
+
+	nor->read_opcode = SPINOR_OP_RDUID;
+	/*
+	 * RDUID needs exactly 4 bytes (32 clocks) between command and data.
+	 * The address bytes already account for some of those, so adjust the
+	 * dummy count accordingly.  This way the code works both on spi-mem
+	 * controllers and on legacy controller_ops drivers (e.g. hisi-sfc)
+	 * that always emit an address phase.
+	 */
+	nor->read_dummy = (4 - nor->addr_nbytes) * 8;
+	nor->read_proto = SNOR_PROTO_1_1_1;
+	nor->dirmap.rdesc = NULL;
+
+	ret = spi_nor_read_data(nor, 0, SPI_NOR_UNIQUE_ID_LEN, buf);
+
+	nor->read_opcode = read_opcode;
+	nor->read_dummy = read_dummy;
+	nor->read_proto = read_proto;
+	nor->dirmap.rdesc = rdesc;
+
+	return ret < 0 ? ret : 0;
+}
+
 static int spi_nor_otp_lock_bit_cr(unsigned int region)
 {
 	static const int lock_bits[] = { SR2_LB1, SR2_LB2, SR2_LB3 };
@@ -481,28 +527,79 @@ out:
 	return ret;
 }
 
+static int spi_nor_mtd_fact_otp_info(struct mtd_info *mtd, size_t len,
+				     size_t *retlen, struct otp_info *buf)
+{
+	struct spi_nor *nor = mtd_to_spi_nor(mtd);
+
+	if (len < sizeof(*buf))
+		return -ENOSPC;
+
+	buf->start = 0;
+	buf->length = nor->params->fact_otp.len;
+	buf->locked = 1;
+
+	*retlen = sizeof(*buf);
+
+	return 0;
+}
+
+static int spi_nor_mtd_fact_otp_read(struct mtd_info *mtd, loff_t from,
+				     size_t len, size_t *retlen, u8 *buf)
+{
+	struct spi_nor *nor = mtd_to_spi_nor(mtd);
+	const struct spi_nor_fact_otp *fact_otp = &nor->params->fact_otp;
+	u8 uid[SPI_NOR_UNIQUE_ID_LEN];
+	int ret;
+
+	if (from < 0 || from >= fact_otp->len)
+		return 0;
+
+	len = min_t(size_t, len, fact_otp->len - from);
+	if (!len)
+		return 0;
+
+	ret = spi_nor_prep_and_lock(nor);
+	if (ret)
+		return ret;
+
+	ret = fact_otp->read(nor, uid);
+
+	spi_nor_unlock_and_unprep(nor);
+
+	if (ret)
+		return ret;
+
+	memcpy(buf, uid + from, len);
+	*retlen = len;
+
+	return 0;
+}
+
 void spi_nor_set_mtd_otp_ops(struct spi_nor *nor)
 {
 	struct mtd_info *mtd = &nor->mtd;
 
-	if (!nor->params->otp.ops)
-		return;
+	if (nor->params->otp.ops) {
+		if (WARN_ON(!is_power_of_2(spi_nor_otp_region_len(nor))))
+			return;
 
-	if (WARN_ON(!is_power_of_2(spi_nor_otp_region_len(nor))))
-		return;
+		/*
+		 * Some SPI NOR flashes like Macronix ones can be ordered in
+		 * two different variants. One with a factory locked OTP area
+		 * and one where it is left to the user to write to it. The
+		 * factory locked OTP is usually preprogrammed with an
+		 * "electrical serial number".
+		 */
+		mtd->_get_user_prot_info = spi_nor_mtd_otp_info;
+		mtd->_read_user_prot_reg = spi_nor_mtd_otp_read;
+		mtd->_write_user_prot_reg = spi_nor_mtd_otp_write;
+		mtd->_lock_user_prot_reg = spi_nor_mtd_otp_lock;
+		mtd->_erase_user_prot_reg = spi_nor_mtd_otp_erase;
+	}
 
-	/*
-	 * We only support user_prot callbacks (yet).
-	 *
-	 * Some SPI NOR flashes like Macronix ones can be ordered in two
-	 * different variants. One with a factory locked OTP area and one where
-	 * it is left to the user to write to it. The factory locked OTP is
-	 * usually preprogrammed with an "electrical serial number". We don't
-	 * support these for now.
-	 */
-	mtd->_get_user_prot_info = spi_nor_mtd_otp_info;
-	mtd->_read_user_prot_reg = spi_nor_mtd_otp_read;
-	mtd->_write_user_prot_reg = spi_nor_mtd_otp_write;
-	mtd->_lock_user_prot_reg = spi_nor_mtd_otp_lock;
-	mtd->_erase_user_prot_reg = spi_nor_mtd_otp_erase;
+	if (nor->params->fact_otp.read) {
+		mtd->_get_fact_prot_info = spi_nor_mtd_fact_otp_info;
+		mtd->_read_fact_prot_reg = spi_nor_mtd_fact_otp_read;
+	}
 }
