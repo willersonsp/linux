@@ -1,0 +1,173 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/*
+ * Hi3516DV300 / Hi3516AV300 / Hi3516CV500 SoC family.
+ *
+ * Minimal DTS for modern kernel boot. Hardware peripherals (ISP, VPSS,
+ * VENC, MMZ, etc.) are initialized by vendor OSAL/blob modules at
+ * runtime — only the boot-critical nodes are defined here.
+ */
+
+#include <dt-bindings/clock/hi3516dv300-clock.h>
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0>;
+			enable-method = "hisilicon,hi3516dv300";
+		};
+
+		cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <1>;
+			enable-method = "hisilicon,hi3516dv300";
+		};
+	};
+
+	clock: clock@12010000 {
+		compatible = "hisilicon,hi3516dv300-clock", "syscon";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		#clock-cells = <1>;
+		#reset-cells = <2>;
+		reg = <0x12010000 0x1000>;
+	};
+
+	gic: interrupt-controller@10300000 {
+		compatible = "arm,cortex-a7-gic";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg = <0x10301000 0x1000>, <0x10302000 0x2000>;
+	};
+
+	syscounter {
+		compatible = "arm,armv7-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <1 13 0xf08>,
+			<1 14 0xf08>;
+		clock-frequency = <50000000>;
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		interrupt-parent = <&gic>;
+		ranges;
+
+		clk_apb: clk_apb {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <24000000>;
+		};
+
+		sysctrl: system-controller@12020000 {
+			compatible = "hisilicon,sysctrl";
+			reg = <0x12020000 0x1000>;
+			reboot-offset = <0x4>;
+			#clock-cells = <1>;
+		};
+
+		amba {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "arm,amba-bus";
+			ranges;
+
+			uart0: uart@120a0000 {
+				compatible = "arm,pl011", "arm,primecell";
+				reg = <0x120a0000 0x1000>;
+				interrupts = <0 6 4>;
+				clocks = <&clk_apb>;
+				clock-names = "apb_pclk";
+				status = "okay";
+			};
+		};
+
+		/* SPI NOR flash — boot device */
+		hisfc: spi-nor@10000000 {
+			compatible = "hisilicon,fmc-spi-nor";
+			reg = <0x10000000 0x1000>, <0x14000000 0x10000>;
+			reg-names = "control", "memory";
+			clocks = <&clock HI3516DV300_FMC_CLK>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		hisnfc: spi-nand@10000000 {
+			compatible = "hisilicon,fmc-spi-nand";
+			reg = <0x10000000 0x1000>, <0x14000000 0x10000>;
+			reg-names = "control", "memory";
+			clocks = <&clock HI3516DV300_FMC_CLK>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		/* Ethernet — disabled in DTS to avoid built-in femac probe hang.
+		 * The vendor load_hisilicon script brings up ethernet via
+		 * devmem CRG init + OSAL modules at runtime. */
+		mdio0: mdio@10011100 {
+			compatible = "hisilicon,hisi-femac-mdio";
+			reg = <0x10011100 0x10>;
+			clocks = <&clock HI3516DV300_ETH0_CLK>;
+			clock-names = "mdio";
+			resets = <&clock 0x16c 3>;
+			reset-names = "external-phy";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		hisi_femac0: ethernet@10010000 {
+			compatible = "hisilicon,hi3516dv300-femac",
+				"hisilicon,hisi-femac-v2";
+			reg = <0x10010000 0x1000>,<0x10011300 0x200>;
+			interrupts = <0 32 4>;
+			clocks = <&clock HI3516DV300_ETH0_CLK>;
+			resets = <&clock 0x16c 0>;
+			reset-names = "mac";
+			status = "disabled";
+		};
+
+		/* I2C — needed for sensor communication */
+		i2c_bus0: i2c@120b0000 {
+			compatible = "hisilicon,hibvt-i2c";
+			reg = <0x120b0000 0x1000>;
+			clocks = <&clock HI3516DV300_I2C0_CLK>;
+			status = "disabled";
+		};
+
+		/* Vendor media subsystem — initialized by OSAL modules */
+		media {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "simple-bus";
+			interrupt-parent = <&gic>;
+			ranges;
+
+			osal: osal {
+				compatible = "hisilicon,osal";
+			};
+
+			sys: sys@12010000 {
+				compatible = "hisilicon,hisi-sys";
+				reg = <0x12010000 0x10000>, <0x12020000 0x8000>,
+					<0x12060000 0x10000>, <0x12030000 0x8000>;
+				reg-names = "crg", "sys", "ddr", "misc";
+			};
+		};
+	};
+};

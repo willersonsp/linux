@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/dts-v1/;
+#include "hi3516dv300.dtsi"
+
+/ {
+	model = "Hisilicon HI3516DV300 DEMO Board";
+	compatible = "hisilicon,hi3516dv300";
+
+	chosen {
+		bootargs = "earlycon=pl011,0x120a0000 console=ttyAMA0,115200 keep_bootcon";
+		stdout-path = "serial0:115200n8";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x80000000 0x10000000>;
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&hisfc {
+	hi_sfc {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <160000000>;
+		/* Limit to 16MB to avoid 4-byte address mode issues */
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+};
+
+/* mdio0 disabled — see femac comment above */
+
+/* femac disabled — built-in driver hangs in port_init.
+ * Ethernet brought up by vendor OSAL load_hisilicon script. */

@@ -17,9 +17,21 @@
 */
 
 #include <linux/of_address.h>
+#include <asm/mach/arch.h>
 #include <asm/smp_scu.h>
 
 #include "mach-common.h"
+
+static const char *const hi3516dv300_compat[] __initconst = {
+	"hisilicon,hi3516cv500",
+	"hisilicon,hi3516dv300",
+	"hisilicon,hi3516av300",
+	NULL,
+};
+
+DT_MACHINE_START(HI3516DV300_DT, "Hisilicon HI3516DV300 (Flattened Device Tree)")
+	.dt_compat = hi3516dv300_compat,
+MACHINE_END
 
 #ifdef CONFIG_SMP
 
