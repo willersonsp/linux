@@ -76,11 +76,15 @@ static int hisi_gemac_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
 	if (ret)
 		return ret;
 
-	/* if read data is invalid, we just return 0 instead of -EAGAIN.
-	 * This can make MDIO more robust when reading PHY status.
+	/* If read data is invalid, return 0xffff (the natural floating-bus
+	 * value most MDIO controllers report for an absent PHY) instead of
+	 * -EAGAIN. This keeps MDIO robust against transient errors AND lets
+	 * get_phy_device()'s mostly-Fs check correctly skip empty addresses
+	 * during of_mdiobus_register() autoscan when a PHY child node has
+	 * no "reg" property.
 	 */
 	if (readl(data->membase + MDIO_RDATA_STATUS))
-		return 0;
+		return 0xffff;
 
 	return readl(data->membase + MDIO_SINGLE_DATA) >> 16;
 }
