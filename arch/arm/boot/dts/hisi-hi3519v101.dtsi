@@ -664,7 +664,9 @@
 
 		higmac: ethernet@10050000 {
 			compatible = "hisilicon,higmac";
-			reg = <0x10050000 0x1000>,<0x120100ec 0x4>;
+			reg = <0x10050000 0x1000>,
+			      <0x120100ec 0x4>,
+			      <0x12040140 0x4>;
 			interrupts = <0 25 4>;
 
 			clocks = <&clock HI3519_ETH_CLK>,

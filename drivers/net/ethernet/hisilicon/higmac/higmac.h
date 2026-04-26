@@ -286,6 +286,7 @@ enum higmac_tx_err {
 #define HISILICON_PHY_ID_FESTAV200	(0x20669823)
 #define PHY_ID_KSZ8051MNL               (0x00221550)
 #define PHY_ID_KSZ8081RNB               (0x00221560)
+#define PHY_ID_IP101A                   (0x02430C50)
 #define DEFAULT_PHY_MASK                (0xfffffff0)
 #define REALTEK_PHY_ID_8211E		(0x001cc915)
 #define REALTEK_PHY_MASK		(0x001fffff)
@@ -299,6 +300,7 @@ enum {
 enum {
 	MEM_GMAC_IOBASE,
 	MEM_MACIF_IOBASE,
+	MEM_PINMUX_IOBASE,
 	MEM_FWD_IOBASE,
 	MEM_CTRL_IOBASE,
 };
@@ -504,6 +506,7 @@ struct higmac_netdev_local {
 
 	void __iomem *gmac_iobase;
 	void __iomem *macif_base;
+	void __iomem *pinmux_base;	/* IOCFG: ETH RMII/RGMII pad mux */
 	int index;		/* 0 -- mac0, 1 -- mac1 */
 
 	u32 hw_cap;

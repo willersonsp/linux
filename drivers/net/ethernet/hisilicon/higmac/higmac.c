@@ -51,6 +51,13 @@
 #define RMII_SPEED_10			0x8d
 #define GMAC_FULL_DUPLEX		BIT(4)
 
+/* IOCFG (pin-mux) values for the ETH pads on hi3519/hi3519v101/hi3516av200.
+ * Mirrors OpenIPC/u-boot-hi3519v101 PR #4: the SoC's IO_CONFIG register
+ * at 0x12040140 selects whether the ETH pads are routed as RGMII or RMII.
+ */
+#define HIGMAC_IOCFG_RGMII		0x2
+#define HIGMAC_IOCFG_RMII		0x3
+
 static unsigned int flow_ctrl_en = FLOW_OFF;
 static int tx_flow_ctrl_pause_time = CONFIG_TX_FLOW_CTRL_PAUSE_TIME;
 static int tx_flow_ctrl_pause_interval = CONFIG_TX_FLOW_CTRL_PAUSE_INTERVAL;
@@ -2602,6 +2609,49 @@ int higmac_request_irqs(struct platform_device *pdev,
 	return 0;
 }
 
+static bool higmac_phy_id_is_rmii(u32 phy_id)
+{
+	u32 id = phy_id & DEFAULT_PHY_MASK;
+
+	return id == PHY_ID_KSZ8051MNL ||
+	       id == PHY_ID_KSZ8081RNB ||
+	       id == PHY_ID_IP101A;
+}
+
+/* Read the PHY ID over the existing MDIO bus (already scanned by the
+ * separate hisi-gemac-mdio driver) and pick the interface mode the same
+ * way OpenIPC/u-boot-hi3519v101 PR #4 does it: known RMII parts get
+ * RMII, anything else falls back to whatever the DT declared. Returns
+ * the resolved phy_interface_t, or a negative errno if the PHY is not
+ * yet visible on the bus (probe deferral).
+ */
+static int higmac_autodetect_phy_intf(struct higmac_netdev_local *priv,
+				      phy_interface_t fallback)
+{
+	struct phy_device *phydev;
+	u32 phy_id;
+
+	if (!priv->phy_node)
+		return fallback;
+
+	phydev = of_phy_find_device(priv->phy_node);
+	if (!phydev)
+		return -EPROBE_DEFER;
+
+	phy_id = phydev->phy_id;
+	put_device(&phydev->dev);
+
+	if (phy_id == 0 || phy_id == 0xffffffff)
+		return fallback;
+
+	netdev_info(priv->netdev, "PHY ID 0x%08x\n", phy_id);
+
+	if (higmac_phy_id_is_rmii(phy_id))
+		return PHY_INTERFACE_MODE_RMII;
+
+	return PHY_INTERFACE_MODE_RGMII;
+}
+
 static int higmac_dev_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -2651,6 +2701,19 @@ static int higmac_dev_probe(struct platform_device *pdev)
 	if (IS_ERR(priv->macif_base)) {
 		ret = PTR_ERR(priv->macif_base);
 		goto out_free_netdev;
+	}
+
+	/* Optional third reg range: SoC IOCFG/pinmux register that selects
+	 * RMII vs RGMII routing for the ETH pads (e.g., 0x12040140 on
+	 * hi3519v101 / hi3516av200). Older DTBs may not provide it; treat
+	 * absence as non-fatal so the driver still loads.
+	 */
+	res = platform_get_resource(pdev, IORESOURCE_MEM,
+				    MEM_PINMUX_IOBASE);
+	if (res) {
+		priv->pinmux_base = devm_ioremap_resource(dev, res);
+		if (IS_ERR(priv->pinmux_base))
+			priv->pinmux_base = NULL;
 	}
 
 	priv->port_rst = devm_reset_control_get(dev, HIGMAC_PORT_RST_NAME);
@@ -2730,6 +2793,26 @@ static int higmac_dev_probe(struct platform_device *pdev)
 			ret = -EINVAL;
 			goto out_macif_clk_disable;
 		}
+	}
+
+	/* Autodetect PHY interface mode from the PHY ID (mirrors
+	 * OpenIPC/u-boot-hi3519v101 PR #4) and apply the IOCFG pin-mux.
+	 * Skip for fixed-link, since there's no real PHY to query.
+	 */
+	if (!fixed_link && priv->pinmux_base) {
+		ret = higmac_autodetect_phy_intf(priv, priv->phy_mode);
+		if (ret == -EPROBE_DEFER) {
+			of_node_put(priv->phy_node);
+			goto out_macif_clk_disable;
+		}
+		priv->phy_mode = ret;
+
+		writel(priv->phy_mode == PHY_INTERFACE_MODE_RMII ?
+			    HIGMAC_IOCFG_RMII : HIGMAC_IOCFG_RGMII,
+		       priv->pinmux_base);
+
+		netdev_info(ndev, "PHY interface: %s\n",
+			    phy_modes(priv->phy_mode));
 	}
 
 	mac_addr = of_get_mac_address(node);
