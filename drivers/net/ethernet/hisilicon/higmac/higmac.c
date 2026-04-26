@@ -2615,15 +2615,21 @@ static bool higmac_phy_id_is_rmii(u32 phy_id)
 
 	return id == PHY_ID_KSZ8051MNL ||
 	       id == PHY_ID_KSZ8081RNB ||
-	       id == PHY_ID_IP101A;
+	       id == PHY_ID_IP101A ||
+	       id == PHY_ID_RTL8201F;
 }
 
 /* Read the PHY ID over the existing MDIO bus (already scanned by the
- * separate hisi-gemac-mdio driver) and pick the interface mode the same
- * way OpenIPC/u-boot-hi3519v101 PR #4 does it: known RMII parts get
- * RMII, anything else falls back to whatever the DT declared. Returns
- * the resolved phy_interface_t, or a negative errno if the PHY is not
- * yet visible on the bus (probe deferral).
+ * separate hisi-gemac-mdio driver) and pick the interface mode along
+ * the lines of OpenIPC/u-boot-hi3519v101 PR #4: a known-RMII PHY ID
+ * forces RMII, otherwise we trust whatever the DT declared. The
+ * U-Boot version forced RGMII for unknown PHYs because U-Boot has no
+ * DT to fall back on; in Linux the DT phy-mode is the source of
+ * truth from the board designer, so trusting it for unrecognized
+ * PHYs is safer (avoids regressing boards with RMII PHYs we don't
+ * yet have in the allowlist). Returns the resolved phy_interface_t,
+ * or a negative errno if the PHY is not yet visible on the bus
+ * (probe deferral).
  */
 static int higmac_autodetect_phy_intf(struct higmac_netdev_local *priv,
 				      phy_interface_t fallback)
@@ -2649,7 +2655,7 @@ static int higmac_autodetect_phy_intf(struct higmac_netdev_local *priv,
 	if (higmac_phy_id_is_rmii(phy_id))
 		return PHY_INTERFACE_MODE_RMII;
 
-	return PHY_INTERFACE_MODE_RGMII;
+	return fallback;
 }
 
 static int higmac_dev_probe(struct platform_device *pdev)
