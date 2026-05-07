@@ -25,9 +25,15 @@ static inline void flush(void)
 }
 
 /*
- * nothing to do
+ * On real boards U-Boot leaves PL011 enabled (CR |= UARTEN|TXE|RXE)
+ * before jumping to the kernel. Under QEMU we hand the kernel control
+ * directly, so UARTEN stays clear and writes to UART_DR are dropped.
+ * Enable it here in the decompressor — it persists into kernel boot
+ * and is idempotent on hardware that already had it set.
  */
-#define arch_decomp_setup()
+#define arch_decomp_setup() do {                                \
+	*(volatile unsigned int *)(UART0_BASE + 0x30) = 0x301;  \
+} while (0)
 #define arch_decomp_wdog()
 
 #endif
