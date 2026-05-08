@@ -1,0 +1,21 @@
+/*
+ * Hi3520DV200 DEMO board DTS (Phase 4.7 backport).
+ */
+
+/dts-v1/;
+#include "hi3520dv200.dtsi"
+
+/ {
+	model = "Hisilicon HI3520DV200 DEMO Board";
+	compatible = "hisilicon,hi3520dv200";
+
+	chosen {
+		bootargs = "console=ttyAMA0,115200 rdinit=/sbin/init";
+	};
+
+	memory {
+		device_type = "memory";
+		/* DDR base 0x80000000, 256 MiB on QEMU reference */
+		reg = <0x80000000 0x10000000>;
+	};
+};

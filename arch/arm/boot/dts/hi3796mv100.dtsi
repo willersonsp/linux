@@ -1,0 +1,93 @@
+/*
+ * DTS for HiSilicon Hi3796M V100 (Cortex-A7 quad, HiSTB).
+ *
+ * Phase 4.6 minimal port: enough peripherals for boot-to-shell on QEMU.
+ * Vendor 3.10 SDK uses ATAGs MACHINE_START "bigfish" with a heavy
+ * mach-hifone platform; this port skips the HiSTB clock controller and
+ * power-management infrastructure and uses fixed-rate clocks for UART
+ * so the kernel can boot without a full HiSTB clk driver.
+ *
+ * Memory map from vendor mach-hifone/include/mach/platform.h:
+ *   GIC:    0xf1000000 (dist@+0x1000, cpu@+0x2000)
+ *   CRG:    0xf8a22000
+ *   SCTL:   0xf8000000
+ *   UART0:  0xf8b00000
+ *   TIMER:  0xf8002000 (timer01)
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0>;
+		};
+	};
+
+	apb_clk: apb_clk {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <100000000>;
+		clock-output-names = "apb_clk";
+	};
+
+	uart_clk: uart_clk {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <75000000>;
+		clock-output-names = "uart_clk";
+	};
+
+	timer_clk: timer_clk {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <50000000>;
+		clock-output-names = "timer_clk";
+	};
+
+	gic: interrupt-controller@f1001000 {
+		compatible = "arm,cortex-a15-gic";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg = <0xf1001000 0x1000>, <0xf1002000 0x2000>;
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		interrupt-parent = <&gic>;
+		ranges;
+
+		uart0: serial@f8b00000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0xf8b00000 0x1000>;
+			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&uart_clk>, <&apb_clk>;
+			clock-names = "uartclk", "apb_pclk";
+			status = "okay";
+		};
+
+		dual_timer0: dual_timer@f8002000 {
+			compatible = "arm,sp804", "arm,primecell";
+			interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>;
+			reg = <0xf8002000 0x1000>;
+			clocks = <&timer_clk>, <&timer_clk>, <&apb_clk>;
+			clock-names = "timer0", "timer1", "apb_pclk";
+		};
+	};
+};

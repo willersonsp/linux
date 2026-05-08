@@ -1,0 +1,147 @@
+/*
+ * DTS for HiSilicon Hi3536 (Cortex-A17 quad + Cortex-A7 video coprocessor).
+ *
+ * Phase 4.5 backport: based on hi3531a.dtsi but with the Cortex-A17 mpcore
+ * peripheral block at 0x1fff0000 instead of A9's 0x10300000.  Single-CPU
+ * boot for now (max_cpus=1) — quad SMP via vendor pen-release pattern is
+ * a follow-up.  Peripheral addresses (CRG, sysctl, UART, timers, FMC,
+ * GMAC, SATA, USB) match Hi3531A's HiBVT layout.
+ *
+ * Reuses hi3531a-clock.h CRG bit indices via hi3536-clock.h alias header.
+ */
+
+#include <dt-bindings/clock/hi3536-clock.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		i2c0 = &i2c_bus0;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a17";
+			reg = <0>;
+		};
+	};
+
+	gic: interrupt-controller@1fff1000 {
+		compatible = "arm,cortex-a15-gic";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		/* A17 mpcore peripheral at 0x1fff0000:
+		 *   +0x000  SCU
+		 *   +0x1000 GIC dist
+		 *   +0x2000 GIC cpu interface
+		 */
+		reg = <0x1fff1000 0x1000>, <0x1fff2000 0x2000>;
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		interrupt-parent = <&gic>;
+		ranges;
+
+		clock: clock@12040000 {
+			compatible = "hisilicon,hi3531a-clock";
+			reg = <0x12040000 0x1000>;
+			#clock-cells = <1>;
+			#reset-cells = <2>;
+		};
+
+		sysctrl: system-controller@12050000 {
+			compatible = "hisilicon,hi3531a-sysctrl", "syscon";
+			reg = <0x12050000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		reboot {
+			compatible = "syscon-reboot";
+			regmap = <&sysctrl>;
+			offset = <0x4>;
+			mask = <0xdeadbeef>;
+		};
+
+		dual_timer0: dual_timer@12000000 {
+			compatible = "arm,sp804", "arm,primecell";
+			interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>;
+			reg = <0x12000000 0x1000>;
+			clocks = <&sysctrl HI3536_TIME0_0_CLK>,
+			         <&sysctrl HI3536_TIME0_1_CLK>,
+			         <&clock HI3536_PERIAXI_CLK>;
+			clock-names = "timer0", "timer1", "apb_pclk";
+			status = "disabled";
+		};
+
+		dual_timer1: dual_timer@12010000 {
+			compatible = "arm,sp804", "arm,primecell";
+			interrupts = <GIC_SPI 2 IRQ_TYPE_LEVEL_HIGH>;
+			reg = <0x12010000 0x1000>;
+			clocks = <&sysctrl HI3536_TIME1_2_CLK>,
+			         <&sysctrl HI3536_TIME1_3_CLK>,
+			         <&clock HI3536_PERIAXI_CLK>;
+			clock-names = "timer2", "timer3", "apb_pclk";
+			status = "disabled";
+		};
+
+		uart0: uart@12080000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x12080000 0x1000>;
+			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clock HI3536_UART0_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		uart1: uart@12090000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x12090000 0x1000>;
+			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clock HI3536_UART1_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		i2c_bus0: i2c@120c0000 {
+			compatible = "hisilicon,hisi-i2c-hisilicon";
+			reg = <0x120c0000 0x100>;
+			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clock HI3536_PERIAXI_CLK>;
+			clock-frequency = <100000>;
+			io-size = <0x1000>;
+			id = <0>;
+			status = "disabled";
+		};
+
+		fmc: flash-memory-controller@10000000 {
+			compatible = "hisilicon,hisi-fmc";
+			reg = <0x10000000 0x1000>, <0x14000000 0x10000>;
+			reg-names = "control", "memory";
+			clocks = <&clock HI3536_FMC_CLK>;
+			max-dma-size = <0x2000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			hisfc:spi_nor_controller {
+				compatible = "hisilicon,fmc-spi-nor";
+				assigned-clocks = <&clock HI3536_FMC_CLK>;
+				assigned-clock-rates = <24000000>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+		};
+	};
+};

@@ -1,0 +1,40 @@
+/*
+ * Hi3536 DEMO board DTS (Phase 4.5 backport).
+ */
+
+/dts-v1/;
+#include "hi3536.dtsi"
+
+/ {
+	model = "Hisilicon HI3536 DEMO Board";
+	compatible = "hisilicon,hi3536";
+
+	chosen {
+		bootargs = "console=ttyAMA0,115200 rdinit=/sbin/init";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x40000000 0x40000000>;     /* 1 GiB at 0x40000000 */
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&dual_timer0 {
+	status = "okay";
+};
+
+&i2c_bus0 {
+	status = "okay";
+};
+
+&hisfc {
+	hi_sfc {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <160000000>;
+	};
+};

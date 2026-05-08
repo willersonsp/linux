@@ -1,0 +1,21 @@
+/*
+ * Hi3796M V100 DEMO board DTS (Phase 4.6 minimal backport).
+ */
+
+/dts-v1/;
+#include "hi3796mv100.dtsi"
+
+/ {
+	model = "Hisilicon HI3796M V100 DEMO Board";
+	compatible = "hisilicon,hi3796mv100";
+
+	chosen {
+		bootargs = "console=ttyAMA0,115200 rdinit=/sbin/init";
+	};
+
+	memory {
+		device_type = "memory";
+		/* HiSTB DDR base 0x0, 1 GiB on DEMO board */
+		reg = <0x0 0x40000000>;
+	};
+};
