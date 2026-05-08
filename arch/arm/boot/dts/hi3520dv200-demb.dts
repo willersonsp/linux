@@ -10,7 +10,6 @@
 	compatible = "hisilicon,hi3520dv200";
 
 	chosen {
-		bootargs = "console=ttyAMA0,115200 rdinit=/sbin/init";
 	};
 
 	memory {
