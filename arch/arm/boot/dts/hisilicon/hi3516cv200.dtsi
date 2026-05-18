@@ -1,0 +1,234 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright (c) 2016 HiSilicon Technologies Co., Ltd.
+ *
+ * Hi3516CV200 / Hi3518EV20x V2 SoC family (ARM926EJ-S, ARMv5TE).
+ * Ported from the vendor 4.9 BSP arch/arm/boot/dts/hi3518ev20x.dtsi
+ * onto the modern dt-bindings + crg- driver scaffold. The register map
+ * matches the vendor SDK byte-for-byte; only the dts-level scaffolding
+ * (skeleton.dtsi removal, clock-frequency on SP804, clock-names on
+ * MDIO, phy-reset-delays on FEMAC) is modernized.
+ *
+ * Sibling SoCs that re-use this dtsi: Hi3518EV200, Hi3518EV201.
+ */
+
+#include <dt-bindings/clock/hi3516cv200-clock.h>
+
+/* skeleton.dtsi was removed in 4.18; root cells set explicitly below. */
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	chosen { };
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		i2c0 = &i2c_bus0;
+		i2c1 = &i2c_bus1;
+		i2c2 = &i2c_bus2;
+		spi0 = &spi_bus0;
+		spi1 = &spi_bus1;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,arm926ej-s";
+			reg = <0>;
+		};
+	};
+
+	vic: interrupt-controller@100d0000 {
+		compatible = "arm,pl190-vic";
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		reg = <0x100d0000 0x1000>;
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		interrupt-parent = <&vic>;
+		ranges;
+
+		/* Vendor names this node "clock" but the analogous block
+		 * on cv300 is called "crg_ctrl" — keep vendor naming so the
+		 * 4.9-era DT (which we want to be a drop-in) parses
+		 * unchanged. The compatible matches the CRG driver's
+		 * CLK_OF_DECLARE / platform_driver match_table. */
+		crg_ctrl: clock@20030000 {
+			compatible = "hisilicon,hi3518ev20x-clock";
+			reg = <0x20030000 0x1000>;
+			#clock-cells = <1>;
+			#reset-cells = <2>;
+		};
+
+		sys_ctrl: system-controller@20050000 {
+			compatible = "hisilicon,hi3518ev20x-sysctrl", "syscon";
+			reg = <0x20050000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		reboot {
+			compatible = "syscon-reboot";
+			regmap = <&sys_ctrl>;
+			offset = <0x4>;
+			mask = <0xdeadbeef>;
+		};
+
+		dual_timer0: dual_timer@20000000 {
+			compatible = "arm,sp804", "arm,primecell";
+			reg = <0x20000000 0x1000>;
+			interrupts = <3>;
+			/* SP804 driver in 6.x uses clk_get_rate() which returns
+			 * 0 if the clock provider isn't fully initialized when
+			 * timer inits at start_kernel. clock-frequency
+			 * overrides — matches the 3 MHz fixed-rate the sysctrl
+			 * early init registers. */
+			clock-frequency = <3000000>;
+			clocks = <&sys_ctrl HI3516CV200_TIME0_0_CLK>,
+				 <&sys_ctrl HI3516CV200_TIME0_1_CLK>,
+				 <&crg_ctrl HI3516CV200_SYSAPB_CLK>;
+			clock-names = "timer0", "timer1", "apb_pclk";
+		};
+
+		dual_timer1: dual_timer@20010000 {
+			compatible = "arm,sp804", "arm,primecell";
+			reg = <0x20010000 0x1000>;
+			interrupts = <4>;
+			clock-frequency = <3000000>;
+			clocks = <&sys_ctrl HI3516CV200_TIME1_2_CLK>,
+				 <&sys_ctrl HI3516CV200_TIME1_3_CLK>,
+				 <&crg_ctrl HI3516CV200_SYSAPB_CLK>;
+			clock-names = "timer2", "timer3", "apb_pclk";
+			status = "disabled";
+		};
+
+		uart0: uart@20080000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x20080000 0x1000>;
+			interrupts = <5>;
+			clocks = <&crg_ctrl HI3516CV200_UART0_CLK>;
+			clock-names = "apb_pclk";
+		};
+
+		uart1: uart@20090000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x20090000 0x1000>;
+			interrupts = <30>;
+			clocks = <&crg_ctrl HI3516CV200_UART1_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		uart2: uart@200a0000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x200a0000 0x1000>;
+			interrupts = <25>;
+			clocks = <&crg_ctrl HI3516CV200_UART2_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		i2c_bus0: i2c@200d0000 {
+			compatible = "hisilicon,hisi-i2c-hisilicon";
+			reg = <0x200d0000 0x100>;
+			interrupts = <20>;
+			clocks = <&crg_ctrl HI3516CV200_SYSAPB_CLK>;
+			clock-frequency = <100000>;
+			status = "disabled";
+		};
+
+		i2c_bus1: i2c@20240000 {
+			compatible = "hisilicon,hisi-i2c-hisilicon";
+			reg = <0x20240000 0x100>;
+			interrupts = <20>;
+			clocks = <&crg_ctrl HI3516CV200_SYSAPB_CLK>;
+			clock-frequency = <100000>;
+			status = "disabled";
+		};
+
+		i2c_bus2: i2c@20250000 {
+			compatible = "hisilicon,hisi-i2c-hisilicon";
+			reg = <0x20250000 0x100>;
+			interrupts = <20>;
+			clocks = <&crg_ctrl HI3516CV200_SYSAPB_CLK>;
+			clock-frequency = <100000>;
+			status = "disabled";
+		};
+
+		spi_bus0: spi@200c0000 {
+			compatible = "arm,pl022", "arm,primecell";
+			arm,primecell-periphid = <0x00800022>;
+			reg = <0x200c0000 0x1000>;
+			interrupts = <6>;
+			clocks = <&crg_ctrl HI3516CV200_SPI0_CLK>;
+			clock-names = "apb_pclk";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi_bus1: spi@200e0000 {
+			compatible = "arm,pl022", "arm,primecell";
+			arm,primecell-periphid = <0x00800022>;
+			reg = <0x200e0000 0x1000>;
+			interrupts = <7>;
+			clocks = <&crg_ctrl HI3516CV200_SPI1_CLK>;
+			clock-names = "apb_pclk";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		mdio: mdio@10091100 {
+			compatible = "hisilicon,hisi-femac-mdio";
+			reg = <0x10091100 0x10>;
+			/* modern hisi-femac-mdio uses devm_clk_get(dev,"mdio")
+			 * — needs a NAMED clock, not unnamed. */
+			clocks = <&crg_ctrl HI3516CV200_ETH_CLK>;
+			clock-names = "mdio";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		hisi_femac: ethernet@10090000 {
+			compatible = "hisilicon,hi3518ev20x-femac",
+				     "hisilicon,hisi-femac-v2";
+			reg = <0x10090000 0x1000>, <0x10091300 0x200>;
+			interrupts = <12>;
+			clocks = <&crg_ctrl HI3516CV200_ETH_CLK>;
+			resets = <&crg_ctrl 0xec 0>;
+			reset-names = "mac";
+			/* PHY reset delays required by hisi_femac when "phy"
+			 * reset is present. phy-mode + phy-handle set in
+			 * hi3516cv200-demb.dts. */
+			hisilicon,phy-reset-delays-us = <10000 10000 30000>;
+		};
+
+		fmc: flash-memory-controller@10010000 {
+			compatible = "hisilicon,hisi-fmc";
+			reg = <0x10010000 0x1000>, <0x58000000 0x10000>;
+			reg-names = "control", "memory";
+			clocks = <&crg_ctrl HI3516CV200_FMC_CLK>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		pmux: pinmux@200f0000 {
+			compatible = "pinctrl-single";
+			reg = <0x200f0000 0x108>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges;
+			pinctrl-single,register-width = <32>;
+			pinctrl-single,function-mask = <7>;
+		};
+	};
+};

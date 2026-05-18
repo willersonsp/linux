@@ -7,6 +7,16 @@ config COMMON_CLK_HI3516CV300
 	help
 	  Build the clock driver for hi3516cv300.
 
+config COMMON_CLK_HI3516CV200
+	tristate "HI3516CV200 / Hi3518EV20x Clock Driver"
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
+	select RESET_HISI
+	default ARCH_HI3516CV200
+	help
+	  Build the clock driver for the V2 family — hi3516cv200,
+	  hi3518ev200, hi3518ev201. Ports the vendor 4.9 BSP clock
+	  topology onto the modern crg- platform_driver scaffold.
+
 config COMMON_CLK_HI3519
 	tristate "Hi3519 Clock Driver"
 	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST

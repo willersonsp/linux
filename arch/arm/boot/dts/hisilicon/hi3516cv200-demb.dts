@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright (c) 2016 HiSilicon Technologies Co., Ltd.
+ *
+ * Hi3516CV200 DEMO Board (DEMB) reference DT.
+ * Ported from the vendor 4.9 BSP arch/arm/boot/dts/hi3518ev20x-demb.dts.
+ *
+ * Production cameras pair this SoC with single MIPI sensors (IMX291,
+ * SC2135, JXF22, etc.) at 1080p; reference board is a generic eval kit.
+ */
+
+/dts-v1/;
+#include "hi3516cv200.dtsi"
+
+/ {
+	model = "Hisilicon Hi3516CV200 DEMO Board";
+	compatible = "hisilicon,hi3516cv200";
+
+	memory {
+		device_type = "memory";
+		/* 64 MiB DDR @ 0x80000000 — production cameras ship with
+		 * 64 MiB total, kernel gets 32 MiB and the upper 32 MiB
+		 * is reserved for the vendor MMZ media allocator (set via
+		 * `mmz=` in the u-boot bootargs). */
+		reg = <0x80000000 0x4000000>;
+	};
+
+	chosen {
+		bootargs = "mem=32M console=ttyAMA0,115200 root=/dev/mtdblock3 rootfstype=squashfs init=/init";
+		stdout-path = "serial0:115200n8";
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&i2c_bus0 {
+	status = "okay";
+};
+
+&spi_bus0 {
+	status = "okay";
+};
+
+&mdio {
+	phy0: ethernet-phy@1 {
+		reg = <1>;
+		/* Most cv200 reference boards use an Internal FE PHY at
+		 * MII address 1. Production boards vary; production DT
+		 * fragments can override via a board-specific overlay. */
+	};
+};
+
+&hisi_femac {
+	phy-handle = <&phy0>;
+	phy-mode = "mii";
+	status = "okay";
+};
