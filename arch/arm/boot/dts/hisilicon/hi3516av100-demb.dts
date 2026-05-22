@@ -65,15 +65,15 @@
 	num-cs = <3>;
 };
 
-&mdio {
-	ethphy: ethernet-phy@1 {
-		reg = <1>;
-	};
-};
-
 &higmac {
-	phy-handle = <&ethphy>;
 	phy-mode = "rgmii";
+	phy-handle = <&ethphy>;
+
+	mdio {
+		ethphy: ethernet-phy@1 {
+			reg = <1>;
+		};
+	};
 };
 
 &mmc0 {

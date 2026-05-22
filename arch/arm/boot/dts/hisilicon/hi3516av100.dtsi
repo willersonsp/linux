@@ -255,19 +255,9 @@
 			status = "disabled";
 		};
 
-		mdio: mdio@100903c0 {
-			compatible = "hisilicon,hisi-gemac-mdio";
-			reg = <0x100903c0 0x20>;
-			clocks = <&clock HI3516AV100_ETH_CLK>,
-				 <&clock HI3516AV100_ETH_PHY_MUX>;
-			clock-names = "mdio_clk", "phy_mux_clk";
-			#address-cells = <1>;
-			#size-cells = <0>;
-		};
-
 		higmac: ethernet@10090000 {
 			compatible = "hisilicon,higmac";
-			reg = <0x10090000 0x1000>, <0x200300ec 0x4>;
+			reg = <0x10090000 0x1000>;
 			interrupts = <0 25 4>;
 			clocks = <&clock HI3516AV100_ETH_CLK>,
 				 <&clock HI3516AV100_ETH_MACIF_CLK>;
@@ -275,6 +265,17 @@
 			resets = <&clock 0xcc 0>, <&clock 0xcc 2>;
 			reset-names = "port_reset", "macif_reset";
 			mac-address = [00 00 00 00 00 00];
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* MDIO is at offset 0x3c0 of the MAC MMIO. The
+			 * mainline hisi_higmac driver registers the mii_bus
+			 * itself — no separate hisilicon,hisi-gemac-mdio
+			 * platform device. */
+			mdio {
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
 		};
 
 		mmc0: mmc@206e0000 {
