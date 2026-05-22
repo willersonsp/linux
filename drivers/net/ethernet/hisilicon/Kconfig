@@ -37,6 +37,19 @@ config HISI_FEMAC
 	  The FEMAC exchanges data with the CPU, and supports
 	  the energy efficient Ethernet (EEE).
 
+config HISI_HIGMAC
+	tristate "Hisilicon Gigabit Ethernet MAC (HiGMAC) support"
+	depends on HAS_IOMEM
+	depends on OF
+	select PHYLIB
+	select RESET_CONTROLLER
+	help
+	  This selects the Hisilicon HiGMAC Gigabit Ethernet MAC driver
+	  used on hi3516av100, hi3519v101 and similar SoCs.  The driver
+	  implements the basic descriptor-ring DMA TX/RX paths and the
+	  embedded MDIO controller; advanced features (TSO, checksum
+	  offload, EEE, RSS) are not supported.
+
 config HIP04_ETH
 	tristate "HISILICON P04 Ethernet support"
 	depends on HAS_IOMEM	# For MFD_SYSCON

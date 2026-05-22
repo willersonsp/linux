@@ -1,0 +1,309 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright (c) 2016 HiSilicon Technologies Co., Ltd.
+ *
+ * Hi3516AV100 / Hi3516DV100 V2A SoC family (Cortex-A7, ARMv7).
+ * Ported from the vendor 4.9 BSP arch/arm/boot/dts/hi3516a.dtsi onto
+ * the modern dt-bindings + crg- driver scaffold (mirroring
+ * hi3516cv200.dtsi for V2). The register map matches the vendor SDK
+ * byte-for-byte; only dts-level scaffolding (skeleton.dtsi removal,
+ * explicit cpus #address/#size-cells, GIC v2 cells form) is modernized.
+ *
+ * Sibling SoCs that re-use this dtsi: Hi3516DV100 (pin-compatible).
+ *
+ * Architecture notes:
+ *   - Cortex-A7 single Linux CPU (vendor SMP is not wired here; mainline
+ *     port is UP per the vendor BSP layout in hi3516a-demb.dts).
+ *   - GIC v2 (cortex-a7-gic) at 0x20300000.
+ *   - Arch timer (architected ARM generic timer) preferred over SP804,
+ *     which is exposed but disabled by default — board files can enable.
+ *   - higmac ethernet (GMAC) at 0x10090000 — distinct from cv200/cv300's
+ *     femac. Two clock gates (clk_eth + clk_eth_macif), MDIO sub-node.
+ */
+
+#include <dt-bindings/clock/hi3516av100-clock.h>
+
+/* skeleton.dtsi was removed in 4.18; root cells set explicitly below. */
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	chosen { };
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+		i2c0 = &i2c_bus0;
+		i2c1 = &i2c_bus1;
+		i2c2 = &i2c_bus2;
+		spi0 = &spi_bus0;
+		spi1 = &spi_bus1;
+	};
+
+	gic: interrupt-controller@20300000 {
+		compatible = "arm,cortex-a7-gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		reg = <0x20301000 0x1000>,
+		      <0x20302000 0x100>;
+	};
+
+	timer {
+		/* Architected ARM timer — Cortex-A7 generic timer. */
+		compatible = "arm,armv7-timer";
+		interrupts = <1 13 0xf08>,
+			     <1 14 0xf08>,
+			     <1 11 0xf08>,
+			     <1 10 0xf08>;
+		clock-frequency = <50000000>;
+	};
+
+	clk_3m: clk_3m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <3000000>;
+	};
+
+	clk_apb: clk_apb {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <50000000>;
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		interrupt-parent = <&gic>;
+		ranges;
+
+		/* Vendor names this node "clock" — keep so vendor DT
+		 * fragments line up unchanged. */
+		clock: clock@20030000 {
+			compatible = "hisilicon,hi3516a-clock";
+			reg = <0x20030000 0x1000>;
+			#clock-cells = <1>;
+			#reset-cells = <2>;
+		};
+
+		sysctrl: system-controller@20050000 {
+			compatible = "hisilicon,hi3516a-sysctrl",
+				     "syscon", "simple-mfd";
+			reg = <0x20050000 0x1000>;
+			reboot-offset = <0x4>;
+			#clock-cells = <1>;
+		};
+
+		pmu {
+			compatible = "arm,cortex-a7-pmu";
+			interrupts = <0 32 4>;
+		};
+
+		uart0: serial@20080000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x20080000 0x1000>;
+			interrupts = <0 8 4>;
+			clocks = <&clock HI3516AV100_UART0_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		uart1: serial@20090000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x20090000 0x1000>;
+			interrupts = <0 9 4>;
+			clocks = <&clock HI3516AV100_UART1_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		uart2: serial@200a0000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x200a0000 0x1000>;
+			interrupts = <0 10 4>;
+			clocks = <&clock HI3516AV100_UART2_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		uart3: serial@20230000 {
+			compatible = "arm,pl011", "arm,primecell";
+			reg = <0x20230000 0x1000>;
+			interrupts = <0 11 4>;
+			clocks = <&clock HI3516AV100_UART3_CLK>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		dual_timer0: timer@20000000 {
+			compatible = "arm,sp804", "arm,primecell";
+			reg = <0x20000000 0x1000>;
+			interrupts = <0 3 4>;
+			clocks = <&clk_apb>, <&clk_3m>, <&clk_apb>;
+			clock-names = "timer00", "timer01", "apb_pclk";
+			status = "disabled";
+		};
+
+		i2c_bus0: i2c@200d0000 {
+			compatible = "hisilicon,hisi-i2c-hisilicon";
+			reg = <0x200d0000 0x100>;
+			interrupts = <0 14 4>;
+			clocks = <&clock HI3516AV100_SYSAXI_CLK>;
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		i2c_bus1: i2c@20240000 {
+			compatible = "hisilicon,hisi-i2c-hisilicon";
+			reg = <0x20240000 0x100>;
+			interrupts = <0 57 4>;
+			clocks = <&clock HI3516AV100_SYSAXI_CLK>;
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		i2c_bus2: i2c@20250000 {
+			compatible = "hisilicon,hisi-i2c-hisilicon";
+			reg = <0x20250000 0x100>;
+			interrupts = <0 58 4>;
+			clocks = <&clock HI3516AV100_SYSAXI_CLK>;
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi_bus0: spi@200c0000 {
+			compatible = "arm,pl022", "arm,primecell";
+			arm,primecell-periphid = <0x00800022>;
+			reg = <0x200c0000 0x1000>;
+			interrupts = <0 12 4>;
+			clocks = <&clock HI3516AV100_SPI0_CLK>;
+			clock-names = "apb_pclk";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi_bus1: spi@200e0000 {
+			compatible = "arm,pl022", "arm,primecell";
+			arm,primecell-periphid = <0x00800022>;
+			reg = <0x200e0000 0x1000>, <0x20120004 0x4>;
+			interrupts = <0 13 4>;
+			clocks = <&clock HI3516AV100_SPI1_CLK>;
+			clock-names = "apb_pclk";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		gpio0: gpio@20140000 {
+			compatible = "arm,pl061", "arm,primecell";
+			reg = <0x20140000 0x10000>;
+			interrupts = <0 47 4>;
+			clocks = <&clock HI3516AV100_SYSAXI_CLK>;
+			clock-names = "apb_pclk";
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			status = "disabled";
+		};
+
+		gpio1: gpio@20150000 {
+			compatible = "arm,pl061", "arm,primecell";
+			reg = <0x20150000 0x10000>;
+			interrupts = <0 48 4>;
+			clocks = <&clock HI3516AV100_SYSAXI_CLK>;
+			clock-names = "apb_pclk";
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			status = "disabled";
+		};
+
+		gpio2: gpio@20160000 {
+			compatible = "arm,pl061", "arm,primecell";
+			reg = <0x20160000 0x10000>;
+			interrupts = <0 49 4>;
+			clocks = <&clock HI3516AV100_SYSAXI_CLK>;
+			clock-names = "apb_pclk";
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			status = "disabled";
+		};
+
+		gpio3: gpio@20170000 {
+			compatible = "arm,pl061", "arm,primecell";
+			reg = <0x20170000 0x10000>;
+			interrupts = <0 50 4>;
+			clocks = <&clock HI3516AV100_SYSAXI_CLK>;
+			clock-names = "apb_pclk";
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			status = "disabled";
+		};
+
+		higmac: ethernet@10090000 {
+			compatible = "hisilicon,higmac";
+			reg = <0x10090000 0x1000>;
+			interrupts = <0 25 4>;
+			clocks = <&clock HI3516AV100_ETH_CLK>,
+				 <&clock HI3516AV100_ETH_MACIF_CLK>;
+			clock-names = "higmac_clk", "macif_clk";
+			resets = <&clock 0xcc 0>, <&clock 0xcc 2>;
+			reset-names = "port_reset", "macif_reset";
+			mac-address = [00 00 00 00 00 00];
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* MDIO is at offset 0x3c0 of the MAC MMIO. The
+			 * mainline hisi_higmac driver registers the mii_bus
+			 * itself — no separate hisilicon,hisi-gemac-mdio
+			 * platform device. */
+			mdio {
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+		};
+
+		mmc0: mmc@206e0000 {
+			compatible = "hisilicon,hi3516a-himci";
+			reg = <0x206e0000 0x1000>;
+			interrupts = <0 19 4>;
+			clocks = <&clock HI3516AV100_MMC0_CLK>;
+			clock-names = "mmc_clk";
+			resets = <&clock 0xc4 0>;
+			reset-names = "mmc_reset";
+			max-frequency = <100000000>;
+			bus-width = <4>;
+			cap-sd-highspeed;
+			status = "disabled";
+		};
+
+		mmc1: mmc@206f0000 {
+			compatible = "hisilicon,hi3516a-himci";
+			reg = <0x206f0000 0x1000>;
+			interrupts = <0 20 4>;
+			clocks = <&clock HI3516AV100_MMC1_CLK>;
+			clock-names = "mmc_clk";
+			resets = <&clock 0xc4 8>;
+			reset-names = "mmc_reset";
+			max-frequency = <100000000>;
+			bus-width = <4>;
+			cap-sd-highspeed;
+			status = "disabled";
+		};
+	};
+};

@@ -47,6 +47,20 @@ config ARCH_HI3516CV200
 		Support for HiSilicon Hi3516CV200 / Hi3518EV20x V2 camera
 		SoC family (ARM926EJ-S single-core, ARMv5TE).
 
+config ARCH_HI3516AV100
+	bool "Hisilicon Hi3516AV100 / Hi3516DV100 Cortex-A7 family"
+	depends on ARCH_MULTI_V7
+	select HAVE_ARM_ARCH_TIMER
+	select ARM_GIC
+	select PINCTRL
+	select COMMON_CLK_HI3516AV100
+	select ARCH_HAS_RESET_CONTROLLER
+	select RESET_CONTROLLER
+	help
+		Support for HiSilicon Hi3516AV100 / Hi3516DV100 V2A camera
+		SoC family (Cortex-A7 single Linux CPU, ARMv7). Sibling of
+		the older V2 cv200 line (which is ARM926EJ-S / ARMv5TE).
+
 config ARCH_HI3516CV500
 	bool "Hisilicon Hi3516CV500 Cortex-A7 family"
 	depends on ARCH_MULTI_V7
