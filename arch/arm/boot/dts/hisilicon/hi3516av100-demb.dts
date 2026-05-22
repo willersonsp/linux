@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Copyright (c) 2016 HiSilicon Technologies Co., Ltd.
+ *
+ * Hisilicon HI3516AV100 demo board ("DEMB"). Mirrors the vendor 4.9 BSP
+ * hi3516a-demb.dts: 1 GiB RAM @ 0x80000000, single Cortex-A7, UART0
+ * console, higmac ethernet, mmc0/1, all four GPIO chips enabled.
+ */
+
+/dts-v1/;
+#include "hi3516av100.dtsi"
+
+/ {
+	model = "HiSilicon HI3516AV100 DEMB Board";
+	compatible = "hisilicon,hi3516av100";
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0>;
+		};
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x80000000 0x40000000>;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&dual_timer0 {
+	status = "okay";
+};
+
+&i2c_bus0 {
+	status = "okay";
+};
+
+&i2c_bus1 {
+	status = "okay";
+};
+
+&i2c_bus2 {
+	status = "okay";
+};
+
+&spi_bus0 {
+	status = "okay";
+	num-cs = <1>;
+};
+
+&spi_bus1 {
+	status = "okay";
+	num-cs = <3>;
+};
+
+&mdio {
+	ethphy: ethernet-phy@1 {
+		reg = <1>;
+	};
+};
+
+&higmac {
+	phy-handle = <&ethphy>;
+	phy-mode = "rgmii";
+};
+
+&mmc0 {
+	status = "okay";
+};
+
+&mmc1 {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpio3 {
+	status = "okay";
+};

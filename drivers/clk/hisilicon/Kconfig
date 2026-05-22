@@ -17,6 +17,18 @@ config COMMON_CLK_HI3516CV200
 	  hi3518ev200, hi3518ev201. Ports the vendor 4.9 BSP clock
 	  topology onto the modern crg- platform_driver scaffold.
 
+config COMMON_CLK_HI3516AV100
+	tristate "HI3516AV100 / Hi3516DV100 Clock Driver"
+	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
+	select RESET_HISI
+	default ARCH_HI3516AV100
+	help
+	  Build the clock driver for the V2A family — hi3516av100 and
+	  the pin-compatible hi3516dv100 (Cortex-A7 / ARMv7). Ports the
+	  vendor Hi3516A_SDK_V1.0.8.0 BSP clock topology onto the modern
+	  crg- platform_driver scaffold. APLL programming is stubbed —
+	  the CPU runs at the U-Boot-configured rate.
+
 config COMMON_CLK_HI3519
 	tristate "Hi3519 Clock Driver"
 	depends on ARCH_HISI || ARCH_HISI_BVT || COMPILE_TEST
