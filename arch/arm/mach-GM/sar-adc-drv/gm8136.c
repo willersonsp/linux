@@ -180,7 +180,7 @@ static void _platform_process_xgain0_value(struct dev_data* p_dev_data)
     int          len;
     sar_adc_pub_data new_data;
     
-    adc_val=SAR_ADC_RAW_REG_RD(vbase,FTSAR_ADC_DAT0);
+    adc_val=SAR_ADC_RAW_REG_RD(vbase,FTSAR_ADC_DAT0) & 0x3FF;
     if(g_saradc_debug)
         printk("xgain0_value = %d\n",adc_val);
     
@@ -217,7 +217,7 @@ static void _platform_process_xgain1_value(struct dev_data* p_dev_data)
     int          len;
     sar_adc_pub_data new_data;
     
-    adc_val=SAR_ADC_RAW_REG_RD(vbase,FTSAR_ADC_DAT1);
+    adc_val=SAR_ADC_RAW_REG_RD(vbase,FTSAR_ADC_DAT1) & 0x3FF;
     if(g_saradc_debug)
         printk("xgain1_value = %d\n",adc_val);
     
@@ -569,7 +569,7 @@ void Platform_Process_Volt_Threshold(struct dev_data *p_dev_data)
     static int  out_detect_count = 0  ,int_detect_count = 0;
 	static int  zero_val = 0;
         
-    adc_val=SAR_ADC_RAW_REG_RD(vbase,FTSAR_ADC_DAT2);
+    adc_val=SAR_ADC_RAW_REG_RD(vbase,FTSAR_ADC_DAT2) & 0x3FF;
 
     if(g_saradc_debug)
         printk("Platform_Process_Volt_Threshold=%d-%d-%d\n",adc_val,g_saradc_cvbs_info,g_saradc_forcecvbs);
@@ -661,7 +661,7 @@ int Platform_SAR_ADC_GetData(struct dev_data *p_dev_data , sar_adc_pub_data* new
     unsigned int base = (unsigned int)p_dev_data->io_vadr;
     unsigned int value;
 
-    value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT0);
+    value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT0) & 0x3FF;
 
     if(g_saradc_debug)
         printk("xgain0_value = %d\n",value);
@@ -673,14 +673,14 @@ int Platform_SAR_ADC_GetData(struct dev_data *p_dev_data , sar_adc_pub_data* new
     }
 #if 0 
 
-    value = SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT1);
+    value = SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT1) & 0x3FF;
     if(value > 0x0) {
         new_data->adc_val = value;
         new_data->status = KEY_XAIN_1;
         return 0;
     }
    
-    value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT2); 
+    value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT2) & 0x3FF; 
     if(value > 0x0) {
         new_data->adc_val = value;
         new_data->status = KEY_XAIN_2;
@@ -836,15 +836,18 @@ unsigned int Platform_Direct_Get_XGain_Value(unsigned int base , int num)
     unsigned int value = 0;
     
     if(num == 0){
-        value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT0);       
+        value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT0) & 0x3FF;
+        if(g_saradc_debug){
+            printk(KERN_INFO "SARADC_DirectRead: num=%d raw=%u\n", num, value);
+        }
     }
 
     if(num == 1){
-        value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT1);
+        value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT1) & 0x3FF;
     }
 
     if(num == 2){
-        value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT2);
+        value=SAR_ADC_RAW_REG_RD(base,FTSAR_ADC_DAT2) & 0x3FF;
        
     }
     return value;
