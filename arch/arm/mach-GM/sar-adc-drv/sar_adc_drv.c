@@ -1073,6 +1073,10 @@ static long file_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     long ret = 0;
     #endif
 
+    if(Platform_Get_SARADC_Debug()){
+        printk("SARADC: ioctl cmd=0x%x\n", cmd);
+    }
+
 	struct flp_data* p_flp_data = filp->private_data;	
 	struct dev_data* p_dev_data = p_flp_data->p_dev_data;
 	struct dev_specific_data_t* p_data = &p_dev_data->dev_specific_data;
@@ -1153,7 +1157,15 @@ static ssize_t file_read(struct file *filp, char __user *buf, size_t count, loff
 	spin_lock_irqsave(&p_data->lock, cpu_flags);
     if (kfifo_len(&p_data->fifo)==0)
     {
-    	ret = 0;
+        if(Platform_Get_SARADC_Debug()) {
+            printk("SARADC_read: kfifo EMPTY\n");
+        }
+        data.adc_val = Platform_Direct_Get_XGain_Value((unsigned int)p_dev_data->io_vadr, g_xgain_num);
+        data.status = (data.adc_val > 0) ? KEY_XAIN_0 : 0;
+        if (copy_to_user(buf, &data, sizeof(sar_adc_pub_data)))
+            ret = -EFAULT;
+        else
+            ret = sizeof(u8);
         goto exit;
     }
     
@@ -1167,6 +1179,10 @@ static ssize_t file_read(struct file *filp, char __user *buf, size_t count, loff
     	ret = -ERESTARTSYS;
         goto exit;
 	}
+
+    if(Platform_Get_SARADC_Debug()) {
+        printk("SARADC_read: adc_val=%u status=%d count=%zu\n", data.adc_val, data.status, count);
+    }
 
     if (copy_to_user(buf, &data, sizeof(sar_adc_pub_data)))
     {
